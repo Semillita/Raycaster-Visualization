@@ -13,129 +13,99 @@ import com.badlogic.gdx.graphics.GL20;
 
 import static java.lang.Math.*;
 
+/**
+ * Main application class that extends the libGDX framework's class
+ * ApplicationAdapter, that provides methods to be called when different events
+ * such as creation and updates occur.
+ */
 public class Application extends ApplicationAdapter {
 
 	public static int WIDTH = 960, HEIGHT = 480;
-	
-	private static double speed = 200;
-	
-	/**Main method that is run when the program starts
+
+	private static final int minFOV = 20, maxFOV = 120;
+	private static final int minRays = 1, maxRays = 1000;
+
+	/**
+	 * Main method that is run when the program starts
 	 * 
-	 * @param args The command line arguments that the program is run with 
-	 * (in this case none).*/
+	 * Creates a LwjglApplication, an application instance that the libGDX framework
+	 * uses to run, and a configuration with size and graphics sample amount
+	 * specifications.
+	 * 
+	 * @param args The command line arguments that the program is run with (in this
+	 *             case none).
+	 */
 	public static void main(String[] args) {
 		var config = new LwjglApplicationConfiguration();
 		config.samples = 2;
 		config.width = 960;
 		config.height = 480;
 		config.resizable = false;
-		
+
 		new LwjglApplication(new Application(), config);
 	}
-	
+
+	private User user;
 	private RayCamera camera;
 	private Map map;
-	private Point position;
 	private Slider fovSlider;
 	private Slider raysSlider;
-	private double direction = 0;
 	private long lastFrameTime;
-	
-	/**Called when the application is being created*/
+
+	/**
+	 * Called when the application is being created
+	 * 
+	 * Instantiates the necessary components
+	 */
 	@Override
 	public void create() {
+		user = new User();
 		camera = new RayCamera();
 		map = new Map();
-		position = new Point(300, 200);
-		fovSlider = new Slider("FOV", 20, HEIGHT - 50, 20, 120);
-		raysSlider = new Slider("Amount of rays", 20, HEIGHT - 80, 20, 120);
+		fovSlider = new Slider("FOV", 20, HEIGHT - 50, minFOV, maxFOV);
+		raysSlider = new Slider("Amount of rays", 20, HEIGHT - 80, minRays, maxRays);
 		lastFrameTime = System.nanoTime();
-		
+
 		createInputListener();
 	}
-	
-	/**Called every frame, parallel to the v-sync*/
+
+	/**
+	 * Called every frame, parallel to the v-sync
+	 * 
+	 * Renders the rays and the camera's view and the slider UI elements
+	 */
 	@Override
 	public void render() {
 		Gdx.gl.glClearColor(0, 0, 0, 0);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		Gdx.gl.glEnable(GL11.GL_LINE_SMOOTH);
-		
+
 		final double deltaTime = getDeltaTime();
-		
-		final long startTime = System.nanoTime();
-		
-		camera.render(map, position, direction, fovSlider.getValue(), raysSlider.getValue());
-	
+
+		user.update(deltaTime, map);
+		camera.render(map, user.getPosition(), user.getDirection(), fovSlider.getValue(), raysSlider.getValue());
+
 		fovSlider.draw();
 		raysSlider.draw();
-		
-		final long endTime = System.nanoTime();
-		
-		final double seconds = (endTime - startTime) / (double) 1_000_000_000;
-		//System.out.println("--------------------------------------------------------");
-		//System.out.println("Render time: " + seconds + " seconds");
-		//System.out.println("--------------------------------------------------------");
-		
-		if (Gdx.input.isKeyPressed(Keys.W)) {
-			move(direction * -1 + 90, deltaTime);
-		}
-		
-		if (Gdx.input.isKeyPressed(Keys.S)) {
-			move(direction * -1 - 90, deltaTime);
-		}
-		
-		if (Gdx.input.isKeyPressed(Keys.A)) {
-			move(direction * -1 + 180, deltaTime);
-		}
-		
-		if (Gdx.input.isKeyPressed(Keys.D)) {
-			move(direction * -1, deltaTime);
-		}
-		
-		if (Gdx.input.isKeyPressed(Keys.LEFT)) {
-			direction -= 1.5;
-		}
-		
-		if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
-			direction += 1.5;
-		}
 	}
-	
-	/**Attempts to move the camera in a given angle
+
+	/**
+	 * Returns the time passed since the last frame
 	 * 
-	 * Uses delta time to achieve a constant speed across different frame rates
-	 * 
-	 * @param angle the angle to move in
-	 * @param deltaTime the time passed since last frame*/
-	private void move(double angle, double deltaTime) {
-		double movementX = cos(toRadians(angle)) * speed * deltaTime;
-		double movementY = sin(toRadians(angle)) * speed * deltaTime;
-		
-		final double targetX = position.x + movementX;
-		final double targetY = position.y + movementY;
-		
-		if (!(targetX <= 1 || targetX >= map.getWidth() - 1)) {
-			position.x = targetX;
-		}
-		
-		if (!(targetY <= 1 || targetY >= map.getHeight() - 1)) {
-			position.y = targetY;
-		}
-	}
-	
-	/**Returns the time passed since the last frame
-	 * 
-	 * @return the time passed in seconds*/
+	 * @return the time passed in seconds
+	 */
 	private double getDeltaTime() {
 		final long currentTime = System.nanoTime();
 		final double deltaTime = (currentTime - lastFrameTime) / 1_000_000_000d;
 		lastFrameTime = currentTime;
-		
+
 		return deltaTime;
 	}
-	
-	/**Creates a input listener to react to mouse input events*/
+
+	/**
+	 * Creates a input listener to react to mouse input events, using libGDX's
+	 * built-in input handling
+	 */
 	private void createInputListener() {
 		Gdx.input.setInputProcessor(new InputAdapter() {
 
@@ -159,13 +129,7 @@ public class Application extends ApplicationAdapter {
 				raysSlider.drag(screenX, HEIGHT - screenY);
 				return false;
 			}
-
-			@Override
-			public boolean mouseMoved(int screenX, int screenY) {
-				return false;
-			}
-			
 		});
 	}
-	
+
 }

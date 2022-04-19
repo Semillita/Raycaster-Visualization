@@ -107,7 +107,6 @@ public class RayCamera {
 				new Color(1 - (float) distance / 500, 1 - (float) distance / 500, 1 - (float) distance / 500, 1));
 		renderer.rect((float) leftX, (float) (Application.HEIGHT / 2 - height / 2), (float) widthPerRay,
 				(float) height);
-
 	}
 
 	/**
